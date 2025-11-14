@@ -22,7 +22,6 @@ export const verifyToken = (req: AuthRequest,res: Response, next: NextFunction):
             return
         }
         req.user = decoded as JwtPayload;
-        console.log(decoded)
         next();
     })
 }

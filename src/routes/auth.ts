@@ -10,10 +10,8 @@ const colleccion = () => {return getDb().collection<User>('Usuarios');}
 
 const SECRET = process.env.SECRET||""; 
 
-type JetPayload={
-    id: string,
-    email: string
-}
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 
 // TODO
 
@@ -24,39 +22,62 @@ router.get("/",(req, res)=>{
 router.post("/register", async (req,res)=>{
     try {
         const {email, password, username} = req.body as {email: string, password:string, username:string}
-        const users = colleccion()
-        const exists = await users.findOne({email: email})
-        if(exists){
-            return res.status(400).json({message:" Ya existe"})
+        const eMsg:string[] = []
+        if (!emailRegex.test(email)) {
+            eMsg.push("email debe ser un email válid")
+        }
+        if(!password || typeof(password)!="string"){
+            eMsg.push("password debe ser un string")
+        }
+        if(!username || typeof(username)!="string"){
+            eMsg.push("username debe ser un string")
+        }
+        if(eMsg.length >0){
+            res.status(401).json({message: eMsg})
+        }else{
+            const users = colleccion()
+            const exists = await users.findOne({email: email})
+            if(exists){
+                return res.status(400).json({message:" Ya existe"})
+            }
+            const passEncripta = await bcrypt.hash(password,10)
+            await users.insertOne({
+                email, passwordHash: passEncripta, username,
+                createdAt: new Date()
+            })
+
+            res.status(201).json({message: "Usuario creado correctamente"})
         }
 
-        const passEncripta = await bcrypt.hash(password,10)
-        await users.insertOne({
-            email, passwordHash: passEncripta, username,
-            createdAt: new Date()
-        })
-
-        res.status(201).json({message: "Usuario creado correctamente"})
     }catch (error) {
         res.status(500).json({message:error})
     }
 })
 router.post("/login", async (req,res)=>{
     try {
-        const {email, password, username} = req.body as {email: string, password:string, username:string}
-        const users = colleccion()
-
-        const user = await users.findOne({email: email})
-        if(!user) return res.status(400).json({message:" email incorrecto"})
+        const {email, password} = req.body as {email: string, password:string}
+        const eMsg:string[] = []
+        if (!emailRegex.test(email)) {
+            eMsg.push("email debe ser un email válid")
+        }
+        if(!password || typeof(password)!="string"){
+            eMsg.push("password debe ser un string")
+        }
+        if(eMsg.length >0){
+            res.status(401).json({message: eMsg})
+        }else{
+            const users = colleccion()
+            const user = await users.findOne({email: email})
+            if(!user) return res.status(400).json({message:" email incorrecto"})        
+            const validPass = await bcrypt.compare(password, user.passwordHash)
+            if(!validPass) return res.status(201).json({message: " contraseña incorrecta"})
+            
+            const token = jwt.sign({id: user._id?.toString(), email: user.email}, SECRET,{
+                expiresIn: "1h"
+            })
+            res.status(201).json({message: {email: user.email, token: "Bearer "+token}})
+        }
         
-        const validPass = await bcrypt.compare(password, user.passwordHash)
-        if(!validPass) return res.status(201).json({message: " contraseña incorrecta"})
-        
-        const token = jwt.sign({id: user._id?.toString(), email: user.email}, SECRET,{
-            expiresIn: "1h"
-        })
-
-        res.status(201).json({message: {email: user.email, token: "Bearer "+token}})
     } catch (error) {
         res.status(500).json({message:error})
     }

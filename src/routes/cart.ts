@@ -8,10 +8,11 @@ const router = Router()
 const colleccion = () => {return getDb().collection<Cart>('Carros');}
 const colleccionP = () => {return getDb().collection('Productos');}
 
-router.get("/", async (req: AuthRequest,res)=>{
+router.get("/", verifyToken, async (req: AuthRequest,res)=>{
     try {
-        const carts = await colleccion().find().toArray();
-        res.status(201).json(carts);
+        const userID = new ObjectId(String(req.user!.id))
+        const cart = await colleccion().findOne({userId: new ObjectId(userID)})
+        res.status(201).json(cart);
     } catch (error) {
         res.status(404).json(error)
     }
@@ -43,12 +44,10 @@ router.put("/", verifyToken, async (req: AuthRequest,res)=>{
             if(cart){
                 let cartItems = cart.items;
                 cartItems.push(cartProduct)
-                console.log("2")
                 const result = await colleccion().updateOne({_id: cart._id},
                     {
                     $set: {items: cartItems}
                 })
-                console.log("3")
                 res.status(201).json(result)
             }else{
                 const nuevoCart: Cart ={
