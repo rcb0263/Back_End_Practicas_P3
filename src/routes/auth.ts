@@ -33,12 +33,12 @@ router.post("/register", async (req,res)=>{
             eMsg.push("username debe ser un string")
         }
         if(eMsg.length >0){
-            res.status(401).json({message: eMsg})
+            res.status(400).json({message: eMsg})
         }else{
             const users = colleccion()
             const exists = await users.findOne({email: email})
             if(exists){
-                return res.status(400).json({message:" Ya existe"})
+                return res.status(409).json({message:" Un usuario con ese email ya existe"})
             }
             const passEncripta = await bcrypt.hash(password,10)
             await users.insertOne({
@@ -64,18 +64,18 @@ router.post("/login", async (req,res)=>{
             eMsg.push("password debe ser un string")
         }
         if(eMsg.length >0){
-            res.status(401).json({message: eMsg})
+            res.status(400).json({message: eMsg})
         }else{
             const users = colleccion()
             const user = await users.findOne({email: email})
             if(!user) return res.status(400).json({message:" email incorrecto"})        
             const validPass = await bcrypt.compare(password, user.passwordHash)
-            if(!validPass) return res.status(201).json({message: " contraseña incorrecta"})
+            if(!validPass) return res.status(400).json({message: " contraseña incorrecta"})
             
             const token = jwt.sign({id: user._id?.toString(), email: user.email}, SECRET,{
                 expiresIn: "1h"
             })
-            res.status(201).json({message: {email: user.email, token: "Bearer "+token}})
+            res.status(200).json({message: {email: user.email, token: "Bearer "+token}})
         }
         
     } catch (error) {

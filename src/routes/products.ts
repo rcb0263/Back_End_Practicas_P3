@@ -9,7 +9,7 @@ const colleccion = () => {return getDb().collection('Productos');}
 router.get("/", async (req: AuthRequest,res)=>{
     try {
         const productos = await colleccion().find().toArray();
-        res.status(201).json(productos);
+        res.status(200).json(productos);
     } catch (error) {
         res.status(404).json(error)
     }
@@ -24,14 +24,14 @@ router.post("/", verifyToken, async (req: AuthRequest,res)=>{
         if(!description || typeof(description)!="string"){
             eMsg.push("description debe ser un string")
         }
-        if(!price || typeof(price)!="number"){
-            eMsg.push("price debe ser un number")
+        if(!price || typeof(price)!="number" || price<=0){
+            eMsg.push("price debe ser un number mayor a 0")
         }
-        if(!stock || typeof(stock)!="number"){
-            eMsg.push("stock debe ser un number")
+        if(!stock || typeof(stock)!="number"||stock<0){
+            eMsg.push("stock debe ser un number mayor o igual que 0")
         }
         if(eMsg.length >0){
-            res.status(401).json({message: eMsg})
+            res.status(400).json({message: eMsg})
         }else{
             const product:Product ={
                 name: req.body.name,

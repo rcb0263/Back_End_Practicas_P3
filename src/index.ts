@@ -11,5 +11,8 @@ app.use(express.json())
 app.use('/api/auth', rutasAuth)
 app.use('/api/products', rutasProducts)
 app.use('/api/cart', rutasCarts)
+app.use((req, res) => {
+  res.status(404).json({ message: "Not found" });
+});
 //Aplicar las rutas
 app.listen(3003, ()=>console.log("El API se ha conectado"))
