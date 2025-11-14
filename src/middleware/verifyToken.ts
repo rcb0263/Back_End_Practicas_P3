@@ -1,11 +1,11 @@
 import dotenv from "dotenv"
 import { NextFunction, Request, Response } from "express";
-import jwt from "jsonwebtoken"
+import jwt, { JwtPayload } from "jsonwebtoken"
 dotenv.config()
 
 const SECRET = process.env.SECRET; 
 export interface AuthRequest extends Request {
-    user?: string| jwt.JwtPayload;
+    user?: jwt.JwtPayload;
 }
 
 export const verifyToken = (req: AuthRequest,res: Response, next: NextFunction):void=>{
@@ -21,7 +21,7 @@ export const verifyToken = (req: AuthRequest,res: Response, next: NextFunction):
             res.status(401).json({message: "Access token is invalid"})
             return
         }
-        req.user = decoded;
+        req.user = decoded as JwtPayload;
         console.log(decoded)
         next();
     })
