@@ -15,6 +15,8 @@ type JetPayload={
     email: string
 }
 
+// TODO
+
 router.get("/",(req, res)=>{
     res.send("Se ha conectado a la ruta auth correctamente")
 })
